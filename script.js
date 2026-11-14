@@ -3,6 +3,7 @@ const categoryFilter = document.getElementById("categoryFilter");
 const productsContainer = document.getElementById("productsContainer");
 const chatForm = document.getElementById("chatForm");
 const chatWindow = document.getElementById("chatWindow");
+const workerURL = "https://openailorealproject.charismamarlow.workers.dev/";
 
 /* Show initial placeholder until user selects a category */
 productsContainer.innerHTML = `
@@ -30,7 +31,7 @@ function displayProducts(products) {
         <p>${product.brand}</p>
       </div>
     </div>
-  `
+  `,
     )
     .join("");
 }
@@ -43,7 +44,7 @@ categoryFilter.addEventListener("change", async (e) => {
   /* filter() creates a new array containing only products 
      where the category matches what the user selected */
   const filteredProducts = products.filter(
-    (product) => product.category === selectedCategory
+    (product) => product.category === selectedCategory,
   );
 
   displayProducts(filteredProducts);
