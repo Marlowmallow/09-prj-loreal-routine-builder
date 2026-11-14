@@ -1,6 +1,13 @@
 /* Get references to DOM elements */
 const categoryFilter = document.getElementById("categoryFilter");
+const productSearch = document.getElementById("productSearch");
 const productsContainer = document.getElementById("productsContainer");
+const productInfoDialog = document.getElementById("productInfoDialog");
+const productInfoTitle = document.getElementById("productInfoTitle");
+const productInfoDescription = document.getElementById(
+  "productInfoDescription",
+);
+const closeProductInfoButton = document.getElementById("closeProductInfo");
 const selectedProductsList = document.getElementById("selectedProductsList");
 const chatForm = document.getElementById("chatForm");
 const chatWindow = document.getElementById("chatWindow");
@@ -14,6 +21,8 @@ const selectedProductsStorageKey = "lorealRoutineBuilderSelectedProducts";
 /* Keep selected products available while users browse different categories */
 let selectedProducts = [];
 let displayedProducts = [];
+let productCatalog = [];
+let productsPromise = null;
 let messages = [
   {
     role: "system",
@@ -31,11 +40,47 @@ productsContainer.innerHTML = `
 
 selectedProductsList.innerHTML = "<p>No products selected yet.</p>";
 
-/* Add a chat message as text so response content is not treated as HTML */
+/* Bold product names in chat without inserting message content as HTML */
 function displayChatMessage(speaker, content) {
   const messageElement = document.createElement("p");
   messageElement.className = "chat-message";
-  messageElement.textContent = `${speaker}: ${content}`;
+
+  const speakerLabel = document.createElement("strong");
+  speakerLabel.textContent = `${speaker}: `;
+  messageElement.appendChild(speakerLabel);
+
+  const productNames = [
+    ...new Set(
+      [...productCatalog, ...displayedProducts, ...selectedProducts]
+        .map((product) => product.name)
+        .filter(Boolean),
+    ),
+  ].sort((firstName, secondName) => secondName.length - firstName.length);
+
+  if (productNames.length === 0) {
+    messageElement.appendChild(document.createTextNode(content));
+  } else {
+    const productNamesPattern = new RegExp(
+      `(${productNames
+        .map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .join("|")})`,
+      "gi",
+    );
+    const knownProductNames = new Set(
+      productNames.map((name) => name.toLowerCase()),
+    );
+
+    content.split(productNamesPattern).forEach((part) => {
+      if (knownProductNames.has(part.toLowerCase())) {
+        const productName = document.createElement("strong");
+        productName.textContent = part;
+        messageElement.appendChild(productName);
+      } else {
+        messageElement.appendChild(document.createTextNode(part));
+      }
+    });
+  }
+
   chatWindow.appendChild(messageElement);
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
@@ -123,9 +168,24 @@ async function sendMessage(content) {
 
 /* Load product data from JSON file */
 async function loadProducts() {
-  const response = await fetch("products.json");
-  const data = await response.json();
-  return data.products;
+  if (!productsPromise) {
+    productsPromise = (async () => {
+      const response = await fetch("products.json");
+
+      if (!response.ok) {
+        throw new Error(`Could not load products (${response.status}).`);
+      }
+
+      const data = await response.json();
+      productCatalog = data.products;
+      return productCatalog;
+    })().catch((error) => {
+      productsPromise = null;
+      throw error;
+    });
+  }
+
+  return productsPromise;
 }
 
 /* Update the selected-products section */
@@ -166,22 +226,48 @@ function displayProducts(products) {
       );
 
       return `
-    <div
-      class="product-card${isSelected ? " selected" : ""}"
-      data-product-id="${product.id}"
-      role="button"
-      tabindex="0"
-      aria-pressed="${isSelected}"
-    >
-      <img src="${product.image}" alt="${product.name}">
-      <div class="product-info">
-        <h3>${product.name}</h3>
-        <p>${product.brand}</p>
+    <div class="product-card${isSelected ? " selected" : ""}">
+      <button
+        type="button"
+        class="product-select"
+        data-product-id="${product.id}"
+        aria-pressed="${isSelected}"
+      >
+        <img src="${product.image}" alt="">
+        <span class="product-info">
+          <span class="product-name">${product.name}</span>
+          <span class="product-brand">${product.brand}</span>
+        </span>
+      </button>
+      <button
+        type="button"
+        class="product-info-button"
+        data-product-id="${product.id}"
+        aria-label="View details for ${product.name}"
+        title="View product details"
+      >
+        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+      </button>
       </div>
-    </div>
   `;
     })
     .join("");
+}
+
+/* Show a product description in the accessible modal dialog */
+function showProductInfo(productId) {
+  const product = displayedProducts.find(
+    (displayedProduct) => displayedProduct.id === productId,
+  );
+
+  if (!product) {
+    return;
+  }
+
+  productInfoTitle.textContent = product.name;
+  productInfoDescription.textContent =
+    product.description || "No description is available for this product.";
+  productInfoDialog.showModal();
 }
 
 /* Add or remove a product when its card is clicked */
@@ -209,22 +295,27 @@ function toggleProduct(productId) {
 
 /* Let users select and unselect products with a click */
 productsContainer.addEventListener("click", (e) => {
-  const productCard = e.target.closest(".product-card");
+  const infoButton = e.target.closest(".product-info-button");
 
-  if (productCard) {
-    toggleProduct(Number(productCard.dataset.productId));
+  if (infoButton) {
+    showProductInfo(Number(infoButton.dataset.productId));
+    return;
+  }
+
+  const selectButton = e.target.closest(".product-select");
+
+  if (selectButton) {
+    toggleProduct(Number(selectButton.dataset.productId));
   }
 });
 
-/* Support keyboard selection for product cards */
-productsContainer.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" || e.key === " ") {
-    const productCard = e.target.closest(".product-card");
+closeProductInfoButton.addEventListener("click", () => {
+  productInfoDialog.close();
+});
 
-    if (productCard) {
-      e.preventDefault();
-      toggleProduct(Number(productCard.dataset.productId));
-    }
+productInfoDialog.addEventListener("click", (e) => {
+  if (e.target === productInfoDialog) {
+    productInfoDialog.close();
   }
 });
 
@@ -250,19 +341,58 @@ clearProductsButton.addEventListener("click", () => {
   displayProducts(displayedProducts);
 });
 
-/* Filter and display products when category changes */
-categoryFilter.addEventListener("change", async (e) => {
-  const products = await loadProducts();
-  const selectedCategory = e.target.value;
+/* Filter products by both the selected category and search keywords */
+async function filterProducts() {
+  const selectedCategory = categoryFilter.value;
+  const searchTerm = productSearch.value.trim().toLowerCase();
 
-  /* filter() creates a new array containing only products 
-     where the category matches what the user selected */
-  const filteredProducts = products.filter(
-    (product) => product.category === selectedCategory,
-  );
+  if (!selectedCategory && !searchTerm) {
+    displayedProducts = [];
+    productsContainer.innerHTML = `
+      <div class="placeholder-message">
+        Select a category or search for products
+      </div>
+    `;
+    return;
+  }
+
+  const products = await loadProducts();
+  const filteredProducts = products.filter((product) => {
+    const matchesCategory =
+      !selectedCategory || product.category === selectedCategory;
+    const searchableText =
+      `${product.name} ${product.brand} ${product.category} ${product.description}`.toLowerCase();
+
+    return matchesCategory && searchableText.includes(searchTerm);
+  });
+
+  if (filteredProducts.length === 0) {
+    displayedProducts = [];
+    productsContainer.innerHTML = `
+      <div class="placeholder-message">
+        No matching products found
+      </div>
+    `;
+    return;
+  }
 
   displayProducts(filteredProducts);
-});
+}
+
+/* Show product-loading errors in the grid */
+async function updateProductGrid() {
+  try {
+    await filterProducts();
+  } catch (error) {
+    const errorMessage = document.createElement("div");
+    errorMessage.className = "placeholder-message";
+    errorMessage.textContent = `Could not load products. ${error.message}`;
+    productsContainer.replaceChildren(errorMessage);
+  }
+}
+
+categoryFilter.addEventListener("change", updateProductGrid);
+productSearch.addEventListener("input", updateProductGrid);
 
 /* Generate a routine using the products selected by the user */
 generateRoutineButton.addEventListener("click", async () => {

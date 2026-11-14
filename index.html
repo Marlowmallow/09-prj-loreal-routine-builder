@@ -25,6 +25,13 @@
 
       <!-- Category Filter -->
       <div class="search-section">
+        <label for="productSearch" class="visually-hidden">Search products</label>
+        <input
+          id="productSearch"
+          type="search"
+          placeholder="Search products by name or keyword"
+          autocomplete="off"
+        />
         <select id="categoryFilter">
           <option value="" disabled selected>Choose a Category</option>
           <option value="cleanser">Cleansers</option>
@@ -41,6 +48,20 @@
 
       <!-- Products Grid -->
       <div id="productsContainer" class="products-grid"></div>
+
+      <!-- Product description dialog -->
+      <dialog
+        id="productInfoDialog"
+        class="product-info-dialog"
+        aria-labelledby="productInfoTitle"
+        aria-describedby="productInfoDescription"
+      >
+        <div class="product-info-dialog-header">
+          <h2 id="productInfoTitle"></h2>
+          <button id="closeProductInfo" type="button">Close</button>
+        </div>
+        <p id="productInfoDescription"></p>
+      </dialog>
 
       <!-- Selected Products -->
       <div class="selected-products">
