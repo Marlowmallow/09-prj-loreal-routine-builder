@@ -27,6 +27,7 @@ body {
   text-align: center;
   padding-top: 50px;
   padding-bottom: 10px;
+  border-bottom: 2px solid #e3a535;
 }
 
 .logo {
@@ -141,7 +142,7 @@ body {
 
 .chat-form input:focus {
   outline: none;
-  border-bottom-color: #000;
+  border-bottom-color: #e3a535;
 }
 
 .chat-form button {
@@ -437,7 +438,7 @@ body {
 }
 
 .generate-btn:hover {
-  background: #666;
+  background: #e3a535;
 }
 
 .generate-btn:disabled,
