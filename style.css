@@ -186,6 +186,23 @@ body {
   display: flex;
   gap: 15px;
   min-height: 160px;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.product-card:hover,
+.product-card:focus-visible {
+  border-color: #666;
+}
+
+.product-card:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 2px;
+}
+
+.product-card.selected {
+  border: 2px solid #000;
+  background-color: #f5f5f5;
 }
 
 .product-card img {
@@ -223,6 +240,13 @@ body {
 
 .selected-products h2 {
   font-size: 20px;
+}
+
+.selected-products-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 20px;
 }
 
@@ -230,6 +254,48 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.selected-product {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.remove-product {
+  padding: 6px 10px;
+  border: 1px solid #666;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.remove-product:hover,
+.remove-product:focus-visible {
+  color: #fff;
+  background: #333;
+}
+
+.clear-products-btn {
+  padding: 8px 12px;
+  border: 1px solid #666;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.clear-products-btn:hover,
+.clear-products-btn:focus-visible {
+  color: #fff;
+  background: #333;
+}
+
+.clear-products-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .generate-btn {
@@ -248,6 +314,12 @@ body {
 
 .generate-btn:hover {
   background: #666;
+}
+
+.generate-btn:disabled,
+.chat-form button:disabled {
+  cursor: wait;
+  opacity: 0.6;
 }
 
 .generate-btn i {
